@@ -1,80 +1,89 @@
 import { test, expect } from '@playwright/test';
 import { TodoPage } from './PageObjects/TodoPage';
 
-
-test.beforeEach('has title', async ({ page }) => {
-  await page.goto('/todomvc/#/', {
-    waitUntil: 'networkidle'
-  });
+test.beforeEach(async ({ page }) => {
+  await page.goto('/todomvc/#/', { waitUntil: 'networkidle' });
   await expect(page).toHaveTitle(/TodoMVC/);
 });
 
-test('add todo', async ({ page }) => {
-  const todo = new TodoPage(page); 
-  await todo.addTodo('Learn Playwright');
+test.describe('Adding tasks', () => {
+  test('should add a task', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    await todoPage.addTodo('Learn Playwright');
 
-  const firstTodoInput = todo.getTasksFields().first();
-  await expect(todo.getTaskFieldByName('Learn Playwright')).toBeVisible();
-  await expect(firstTodoInput).toHaveText('Learn Playwright');
+    const firstTask = todoPage.getTasksFields().first();
+    await expect(firstTask).toHaveText('Learn Playwright');
+  });
 
+  test('should add several tasks', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const tasks = ['Learn Playwright', 'Write tests', 'Have fun'];
+    const taskFields = await todoPage.fillTodoFields(tasks);
+
+    for (const [index, text] of tasks.entries()) {
+      await expect(taskFields.nth(index)).toHaveText(text);
+    }
+  });
 });
 
-test('add several todos', async ({ page }) => {
-  const todo = new TodoPage(page); 
-  
-  const todos = ['Learn Playwright', 'Write tests', 'Have fun'];
-  const todoFields = await todo.fillTodoFields(todos);
-  
-  for (const [index, text] of todos.entries()) {
-    await expect(todoFields.nth(index)).toHaveText(text);
-  }
-  const firstTask = todos[0];
-  await expect(todo.getTaskFieldByName(firstTask)).toBeVisible();
+test.describe('Completing tasks', () => {
+  test('should complete a task', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const task = 'Learn Playwright';
+    await todoPage.addTodo(task);
 
-  const completedTodo = await todo.completeTodo(firstTask);
-  await expect(completedTodo).toBeChecked();
+    const completedTodo = await todoPage.completeTodo(task);
+    await expect(completedTodo).toBeChecked();
+  });
 
-  const thirdTask = todos[2];
-  await expect(todo.getTaskFieldByName(thirdTask)).toBeVisible();
-  const thirdTaskCheckbox = await todo.completeTodo(thirdTask);
-  await expect(thirdTaskCheckbox).toBeChecked();
+  test('should complete multiple tasks', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const tasks = ['Learn Playwright', 'Write tests', 'Have fun'];
+    await todoPage.fillTodoFields(tasks);
+
+    const firstTask = tasks[0];
+    const completedTodo = await todoPage.completeTodo(firstTask);
+    await expect(completedTodo).toBeChecked();
+
+    const thirdTask = tasks[2];
+    const thirdTaskCheckbox = await todoPage.completeTodo(thirdTask);
+    await expect(thirdTaskCheckbox).toBeChecked();
+  });
 });
 
-test('delete todo', async ({ page }) => {
-  const todo = new TodoPage(page);
+test.describe('Deleting tasks', () => {
+  test('should show delete button on hover', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const task = 'Learn Playwright';
+    await todoPage.addTodo(task);
 
-  const todos = ['Learn Playwright', 'Learn Cypress', 'Learn Testing Library', 'Learn Jest'];
-  await todo.fillTodoFields(todos);
+    await todoPage.hoverOnTask(task);
+    await expect(todoPage.getDeleteButton(task)).toBeVisible();
+  });
 
-  const firstTask = todos[0];
-  await expect(todo.getTaskFieldByName(firstTask)).toBeVisible();
-  await todo.completeTodo(firstTask);
+  test('should delete a task', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const tasks = ['Learn Playwright', 'Learn Cypress', 'Learn Testing Library'];
+    await todoPage.fillTodoFields(tasks);
 
+    const taskToDelete = tasks[0];
+    await todoPage.deleteTodo(taskToDelete);
 
-  await todo.hoverOnTask(firstTask); 
-  await expect(todo.getDeleteButton(firstTask)).toBeVisible();
-
-  await todo.deleteTodo(firstTask);
-  expect(todos).toContain(firstTask);
-  await expect(todo.getTaskFieldByName(firstTask)).toHaveCount(0);
-  await expect(todo.getTasksFields()).toHaveCount(todos.length - 1);
-
+    await expect(todoPage.getTaskFieldByName(taskToDelete)).toHaveCount(0);
+    await expect(todoPage.getTasksFields()).toHaveCount(tasks.length - 1);
+  });
 });
 
-test('check if a task is editable', async ({ page }) => {
-  const todo = new TodoPage(page);
-  const task = 'Learn Playwright';
-  const editedTask = 'Learn Playwright - Updated';
-  await todo.addTodo(task);
+test.describe('Editing tasks', () => {
+  test('should edit a task', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const task = 'Learn Playwright';
+    const editedTask = 'Learn Playwright - Updated';
+    await todoPage.addTodo(task);
 
-  const taskField = todo.getTaskFieldByName(task);
-  await expect(taskField).toBeVisible();
+    await todoPage.editTask(task, editedTask);
 
-  await todo.editTask(task, editedTask);
-
-  const updatedTask = todo.getTaskFieldByName(editedTask);
-
-  await expect(updatedTask).not.toHaveText(task);
-  await expect(updatedTask).toHaveText(editedTask);
-  await expect(updatedTask).toBeVisible();
+    const updatedTask = todoPage.getTaskFieldByName(editedTask);
+    await expect(updatedTask).toHaveText(editedTask);
+  });
 });
