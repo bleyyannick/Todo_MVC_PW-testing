@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { TodoPage } from './PageObjects/TodoPage';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/todomvc/#/', { waitUntil: 'networkidle' });
+  await page.goto('/todomvc/#/', { waitUntil: 'load' });
   await expect(page).toHaveTitle(/TodoMVC/);
 });
 
@@ -14,6 +14,44 @@ test.describe('Adding tasks', () => {
     const firstTask = todoPage.getTasksFields().first();
     await expect(firstTask).toHaveText('Learn Playwright');
   });
+
+  test('should not add an empty task', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    await todoPage.addTodo('');
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  });
+
+  test('should not add a task with only spaces', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    await todoPage.addTodo('   ');
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  });
+
+  test('should not add a task with only tabs', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    await todoPage.addTodo('\t\t');
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  });
+
+  test('should not add a task with only newlines', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    await todoPage.addTodo('\n\n');
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  });
+
+  // test('should not add same task twice', async ({ page }) => {
+  //   const todoPage = new TodoPage(page);
+  //   const task = 'Learn Playwright';
+  //   await todoPage.addTodo(task);
+  //   await todoPage.addTodo(task);
+
+  //   expect(todoPage.getTasksList()).toHaveLength(1);
+  //   await expect(todoPage.getTasksFields()).toHaveCount(1);
+  // });
 
   test('should add several tasks', async ({ page }) => {
     const todoPage = new TodoPage(page);
@@ -72,6 +110,18 @@ test.describe('Deleting tasks', () => {
     await expect(todoPage.getTaskFieldByName(taskToDelete)).toHaveCount(0);
     await expect(todoPage.getTasksFields()).toHaveCount(tasks.length - 1);
   });
+
+  test('should delete all tasks', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const tasks = ['Learn Playwright', 'Learn Cypress', 'Learn Testing Library'];
+    await todoPage.fillTodoFields(tasks);
+
+    for (const task of tasks) {
+      await todoPage.deleteTodo(task);
+    }
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  });
 });
 
 test.describe('Editing tasks', () => {
@@ -85,5 +135,15 @@ test.describe('Editing tasks', () => {
 
     const updatedTask = todoPage.getTaskFieldByName(editedTask);
     await expect(updatedTask).toHaveText(editedTask);
+  });
+
+  test('should not edit a task to an empty string', async ({ page }) => {
+    const todoPage = new TodoPage(page);
+    const task = 'Learn Playwright';
+    await todoPage.addTodo(task);
+
+    await todoPage.editTask(task, '');
+
+    await expect(todoPage.getTasksFields()).toHaveCount(0);
   });
 });
