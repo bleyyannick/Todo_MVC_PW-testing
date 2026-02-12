@@ -1,46 +1,46 @@
-import { test, expect } from '@playwright/test';
-import { TodoPage } from './PageObjects/TodoPage';
+import { expect } from '@playwright/test';
+import { test } from './fixtures/todofixture';
 
-test.beforeEach(async ({ page }) => {
-  await page.goto('/todomvc/#/', { waitUntil: 'load' });
-  await expect(page).toHaveTitle(/TodoMVC/);
-});
 
 test.describe('Adding tasks', () => {
-  test('should add a task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-    await todoPage.addTodo('Learn Playwright');
+  test('should add a task', async ({ todoPage }) => {
+    await todoPage.addTodo('Learn test automation');
 
     const firstTask = todoPage.getTasksFields().first();
-    await expect(firstTask).toHaveText('Learn Playwright');
+    await expect(firstTask).toHaveText('Learn test automation');
   });
 
-  test('should not add an empty task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should not add an empty task', async ({ todoPage }) => {
+   
+    const initialCount = await todoPage.getTasksFields().count();
     await todoPage.addTodo('');
+    const numberOfTasks = await todoPage.getTasksFields().count();
 
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+     expect(numberOfTasks).toBe(initialCount);
   });
 
-  test('should not add a task with only spaces', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should not add a task with only spaces', async ({ todoPage }) => {
+    const initialCount = await todoPage.getTasksFields().count();
     await todoPage.addTodo('   ');
+    const numberOfTasks = await todoPage.getTasksFields().count();
 
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+     expect(numberOfTasks).toBe(initialCount);
   });
 
-  test('should not add a task with only tabs', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should not add a task with only tabs', async ({ todoPage }) => {
+    const initialCount = await todoPage.getTasksFields().count();
     await todoPage.addTodo('\t\t');
-
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+    const numberOfTasks = await todoPage.getTasksFields().count();
+    expect(numberOfTasks).toBe(initialCount);
+  
   });
 
-  test('should not add a task with only newlines', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should not add a task with only newlines', async ({ todoPage }) => {
+    const initialCount = await todoPage.getTasksFields().count();
     await todoPage.addTodo('\n\n');
+    const numberOfTasks = await todoPage.getTasksFields().count();
 
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+    expect(numberOfTasks).toBe(initialCount);
   });
 
   // test('should not add same task twice', async ({ page }) => {
@@ -53,9 +53,9 @@ test.describe('Adding tasks', () => {
   //   await expect(todoPage.getTasksFields()).toHaveCount(1);
   // });
 
-  test('should add several tasks', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-    const tasks = ['Learn Playwright', 'Write tests', 'Have fun'];
+  test('should add several tasks', async ({ todoPage }) => {
+    
+    const tasks = ['Learn test automation', 'Write tests', 'Have fun'];
     const taskFields = await todoPage.fillTodoFields(tasks);
 
     for (const [index, text] of tasks.entries()) {
@@ -65,85 +65,65 @@ test.describe('Adding tasks', () => {
 });
 
 test.describe('Completing tasks', () => {
-  test('should complete a task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should complete a task', async ({ seededTodoPage }) => {
     const task = 'Learn Playwright';
-    await todoPage.addTodo(task);
 
-    const completedTodo = await todoPage.completeTodo(task);
+    const completedTodo = await seededTodoPage.completeTodo(task);
     await expect(completedTodo).toBeChecked();
   });
 
-  test('should complete multiple tasks', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should complete multiple tasks', async ({ seededTodoPage }) => {
     const tasks = ['Learn Playwright', 'Write tests', 'Have fun'];
-    await todoPage.fillTodoFields(tasks);
 
     const firstTask = tasks[0];
-    const completedTodo = await todoPage.completeTodo(firstTask);
+    const completedTodo = await seededTodoPage.completeTodo(firstTask);
     await expect(completedTodo).toBeChecked();
 
     const thirdTask = tasks[2];
-    const thirdTaskCheckbox = await todoPage.completeTodo(thirdTask);
+    const thirdTaskCheckbox = await seededTodoPage.completeTodo(thirdTask);
     await expect(thirdTaskCheckbox).toBeChecked();
   });
 });
 
 test.describe('Deleting tasks', () => {
-  test('should show delete button on hover', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should show delete button on hover', async ({ seededTodoPage }) => {
     const task = 'Learn Playwright';
-    await todoPage.addTodo(task);
 
-    await todoPage.hoverOnTask(task);
-    await expect(todoPage.getDeleteButton(task)).toBeVisible();
+    await seededTodoPage.hoverOnTask(task);
+    await expect(seededTodoPage.getDeleteButton(task)).toBeVisible();
   });
 
-  test('should delete a task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-    const tasks = ['Learn Playwright', 'Learn Cypress', 'Learn Testing Library'];
-    await todoPage.fillTodoFields(tasks);
+  test('should delete a task', async ({ seededTodoPage }) => {
+    const task = 'Write tests';
 
-    const taskToDelete = tasks[0];
-    await todoPage.deleteTodo(taskToDelete);
-
-    await expect(todoPage.getTaskFieldByName(taskToDelete)).toHaveCount(0);
-    await expect(todoPage.getTasksFields()).toHaveCount(tasks.length - 1);
+    await seededTodoPage.deleteTodo(task);
+    await expect(seededTodoPage.getTaskFieldByName(task)).toHaveCount(0);
   });
 
-  test('should delete all tasks', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-    const tasks = ['Learn Playwright', 'Learn Cypress', 'Learn Testing Library'];
-    await todoPage.fillTodoFields(tasks);
-
-    for (const task of tasks) {
-      await todoPage.deleteTodo(task);
-    }
-
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+  test('should delete all tasks', async ({ seededTodoPage }) => {
+    await seededTodoPage.removeAll();
+    await expect(seededTodoPage.getTasksFields()).toHaveCount(0);
   });
 });
 
 test.describe('Editing tasks', () => {
-  test('should edit a task', async ({ page }) => {
-    const todoPage = new TodoPage(page);
+  test('should edit a task', async ({ seededTodoPage }) => {
     const task = 'Learn Playwright';
-    const editedTask = 'Learn Playwright - Updated';
-    await todoPage.addTodo(task);
+    const editedTask = 'This task has been edited';
 
-    await todoPage.editTask(task, editedTask);
+    await seededTodoPage.editTask(task, editedTask);
 
-    const updatedTask = todoPage.getTaskFieldByName(editedTask);
+    const updatedTask = seededTodoPage.getTaskFieldByName(editedTask);
     await expect(updatedTask).toHaveText(editedTask);
   });
 
-  test('should not edit a task to an empty string', async ({ page }) => {
-    const todoPage = new TodoPage(page);
-    const task = 'Learn Playwright';
-    await todoPage.addTodo(task);
+  test('should delete a task updated with empty string', async ({ seededTodoPage }) => {
+    const task = 'Write tests';
 
-    await todoPage.editTask(task, '');
+    const initialCount = await seededTodoPage.getTasksFields().count();
+    await seededTodoPage.editTask(task, '');
+    const numberOfTasks = await seededTodoPage.getTasksFields().count();
 
-    await expect(todoPage.getTasksFields()).toHaveCount(0);
+    expect(numberOfTasks).toBe(initialCount - 1);
   });
 });

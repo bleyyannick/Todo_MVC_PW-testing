@@ -7,6 +7,10 @@ export class TodoPage {
         this.page = page;
      }
 
+     async goto() { 
+      await this.page.goto('/todomvc/#/', { waitUntil: 'load' }); 
+    }
+
      getTasksFields() {
         return this.page.getByTestId('todo-item');
      }
@@ -30,6 +34,15 @@ export class TodoPage {
         const input = this.page.getByPlaceholder('What needs to be done?');
         await input.fill(todo);
         await input.press('Enter');
+     }
+
+     async removeAll() {
+       const tasks = this.getTasksFields();
+       while (await tasks.count() > 0) {
+          const task = tasks.first();
+          await task.hover();
+          await task.getByLabel('Delete').click();
+       }
      }
 
      async completeTodo(todo: string) {
