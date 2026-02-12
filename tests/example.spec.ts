@@ -60,3 +60,21 @@ test('delete todo', async ({ page }) => {
   await expect(todo.getTasksFields()).toHaveCount(todos.length - 1);
 
 });
+
+test('check if a task is editable', async ({ page }) => {
+  const todo = new TodoPage(page);
+  const task = 'Learn Playwright';
+  const editedTask = 'Learn Playwright - Updated';
+  await todo.addTodo(task);
+
+  const taskField = todo.getTaskFieldByName(task);
+  await expect(taskField).toBeVisible();
+
+  await todo.editTask(task, editedTask);
+
+  const updatedTask = todo.getTaskFieldByName(editedTask);
+
+  await expect(updatedTask).not.toHaveText(task);
+  await expect(updatedTask).toHaveText(editedTask);
+  await expect(updatedTask).toBeVisible();
+});

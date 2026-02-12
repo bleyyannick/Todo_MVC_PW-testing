@@ -64,6 +64,16 @@ export class TodoPage {
         return selectedTask;
      }
 
+     async editTask(task: string, newTask: string) {
+        const taskField = this.getTaskFieldByName(task);
+        await taskField.dblclick();
+        const editInput = taskField.locator('input.edit');
+        await editInput.fill(newTask);
+        await editInput.press('Enter');
+        this.deleteTask(task);
+        this.addTask(newTask);
+     }
+
      
      async deleteTodo(todo: string) {
         const taskToDelete = await this.hoverOnTask(todo);
