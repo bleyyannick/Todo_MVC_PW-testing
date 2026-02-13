@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 
 export class TodoPage { 
     page: Page;
@@ -8,7 +8,7 @@ export class TodoPage {
      }
 
      async goto() { 
-      await this.page.goto('/todomvc/#/', { waitUntil: 'load' }); 
+      await this.page.goto('/todomvc/#/', { waitUntil: 'load', timeout: 60000 }); 
     }
 
      getTasksFields() {
@@ -21,6 +21,10 @@ export class TodoPage {
 
      getDeleteButton(todo: string) {
         return this.getTaskFieldByName(todo).getByLabel('Delete');
+     }
+
+     getFilters() {
+        return this.page.locator('ul.filters');
      }
 
      async fillTodoFields(todos: string[]) {
@@ -71,5 +75,20 @@ export class TodoPage {
         const deleteButton = this.getDeleteButton(todo);
         await deleteButton.click();
      } 
+
+     async filterBy(filter: 'All' | 'Active' | 'Completed') {
+        const filterButton = this.getFilters().getByRole('link', { name: filter });
+        await filterButton.click();
+     }
+
+     async expectFilterSelected(filter: 'All' | 'Active' | 'Completed') {
+        const filterLink = this.getFilters().getByRole('link', { name: filter });
+        await expect(filterLink).toHaveClass(/\bselected\b/);
+     }
+
+     async clearCompletedTasks() {
+        const clearButton = this.page.getByRole('button', { name: 'Clear completed' });
+        await clearButton.click();
+     }
 
 }

@@ -127,3 +127,37 @@ test.describe('Editing tasks', () => {
     expect(numberOfTasks).toBe(initialCount - 1);
   });
 });
+
+test.describe('Filtering tasks', () => {
+  test('should show correct tasks when switching filters', async ({ seededTodoPage }) => {
+    const filters = ['Active', 'Completed', 'All'] as const;
+    for (const filter of filters) {
+      await seededTodoPage.filterBy(filter);
+      await seededTodoPage.expectFilterSelected(filter);
+      const tasks = seededTodoPage.getTasksFields();
+      const tasksCount = await tasks.count();
+      await expect(tasks).toHaveCount(tasksCount);
+    }
+  });
+  test('should not show any completed tasks when deleted', async ({ seededTodoPage }) => {
+    const tasksToDelete = [
+      'Task to be completed and deleted',
+      'Another task to be completed and deleted',
+    ];
+
+    for (const task of tasksToDelete) {
+      await seededTodoPage.addTodo(task);
+      await seededTodoPage.completeTodo(task);
+    }
+    
+    const initialCount = await seededTodoPage.getTasksFields().count();
+    await seededTodoPage.clearCompletedTasks();
+    const numberOfTasks = await seededTodoPage.getTasksFields().count();
+
+    expect(numberOfTasks).toBe(initialCount - tasksToDelete.length);
+    
+    for (const task of tasksToDelete) {
+      await expect(seededTodoPage.getTaskFieldByName(task)).toHaveCount(0);
+    }
+  });
+});
